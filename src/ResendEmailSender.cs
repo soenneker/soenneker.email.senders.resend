@@ -36,48 +36,45 @@ public sealed class ResendEmailSender : IEmailSender
         _enabled = configuration.GetValueStrict<bool>("Email:Enabled");
     }
 
-    public async Task<bool> Send(string messageContent, Type? type, CancellationToken cancellationToken = default)
+    public Task<bool> Send(string messageContent, Type? type, CancellationToken cancellationToken = default)
     {
-        try
+        if (!_enabled)
         {
-            if (!_enabled)
-            {
-                _logger.LogDebug("{name} has been disabled from config", nameof(ResendEmailSender));
-                return false;
-            }
-
-            if (type == null)
-                throw new Exception("Service bus message did not have a type");
-
-            object? msgModel = JsonUtil.Deserialize(messageContent, type);
-
-            if (msgModel is not EmailMessage message)
-                throw new Exception($"Service bus message was not a {typeof(EmailMessage)}");
-
-
-            string html = await BuildHtml(message, cancellationToken).NoSync();
-
-            var from = $"{message.Name} <{message.Address}>";
-
-            List<string>? replyTo = null;
-
-            if (message.ReplyTo.HasContent())
-            {
-                replyTo =
-                [
-                    message.ReplyTo
-                ];
-            }
-
-            string? result = await _resendEmailsUtil.Send(from, message.To, message.Subject, html, null, message.Cc, message.Bcc, replyTo, null, null, null,
-                                                        cancellationToken)
-                                                    .NoSync();
+            _logger.LogDebug("{name} has been disabled from config", nameof(ResendEmailSender));
+            return Task.FromResult(false);
         }
-        catch (Exception e)
+
+        if (type == null)
+            throw new Exception("Service bus message did not have a type");
+
+        object? msgModel = JsonUtil.Deserialize(messageContent, type);
+
+        if (msgModel is not EmailMessage message)
+            throw new Exception($"Service bus message was not a {nameof(EmailMessage)}");
+
+        return Send(message, cancellationToken);
+    }
+
+    public async Task<bool> Send(EmailMessage message, CancellationToken cancellationToken = default)
+    {
+        if (!_enabled)
         {
-            _logger.LogCritical(e, "Unable to send email: {content}", messageContent);
-            throw;
+            _logger.LogDebug("{name} has been disabled from config", nameof(ResendEmailSender));
+            return false;
         }
+
+        string html = await BuildHtml(message, cancellationToken).NoSync();
+
+        var from = $"{message.Name} <{message.Address}>";
+
+        List<string>? replyTo = null;
+        if (message.ReplyTo.HasContent())
+        {
+            replyTo = [message.ReplyTo];
+        }
+
+        await _resendEmailsUtil.Send(from, message.To, message.Subject, html, null, message.Cc, message.Bcc, replyTo, null, null, null, cancellationToken)
+                               .NoSync();
 
         return true;
     }
