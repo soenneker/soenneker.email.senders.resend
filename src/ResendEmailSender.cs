@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Soenneker.Extensions.Messages.Email;
 using Soenneker.Extensions.String;
 using Soenneker.Extensions.Dictionaries.StringString;
 
