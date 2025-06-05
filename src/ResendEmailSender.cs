@@ -26,6 +26,8 @@ public sealed class ResendEmailSender : IEmailSender
     private readonly bool _enabled;
 
     private const string _defaultTemplate = "default.html";
+    private readonly string _defaultAddress;
+    private readonly string _defaultName;
 
     public ResendEmailSender(IResendEmailsUtil resendEmailsUtil, IConfiguration configuration, ILogger<ResendEmailSender> logger, ITemplateUtil templateUtil)
     {
@@ -34,6 +36,8 @@ public sealed class ResendEmailSender : IEmailSender
         _templateUtil = templateUtil;
 
         _enabled = configuration.GetValueStrict<bool>("Email:Enabled");
+        _defaultAddress = configuration.GetValueStrict<string>("Email:DefaultAddress");
+        _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
     }
 
     public Task<bool> Send(string messageContent, Type? type, CancellationToken cancellationToken = default)
@@ -65,7 +69,12 @@ public sealed class ResendEmailSender : IEmailSender
 
         string html = await BuildHtml(message, cancellationToken).NoSync();
 
-        var from = $"{message.Name} <{message.Address}>";
+        string from;
+
+        if (message.Name != null)
+            from = $"{message.Name} <{message.Address}>";
+        else
+            from = message.Address;
 
         List<string>? replyTo = null;
         if (message.ReplyTo.HasContent())
@@ -82,6 +91,9 @@ public sealed class ResendEmailSender : IEmailSender
     private async ValueTask<string> BuildHtml(EmailMessage message, CancellationToken cancellationToken)
     {
         message.TemplateFileName ??= _defaultTemplate;
+
+        message.Name ??= _defaultName;
+        message.Address ??= _defaultAddress;
 
         string templateFilePath = Path.Combine("Resources", "Email", "Templates", message.TemplateFileName);
 
