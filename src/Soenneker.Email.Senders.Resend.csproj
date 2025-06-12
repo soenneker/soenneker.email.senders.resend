@@ -42,10 +42,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6" />
         <PackageReference Include="Soenneker.Email.Senders.Abstract" Version="3.0.8" />
         <PackageReference Include="Soenneker.Extensions.Dictionaries.StringString" Version="3.0.1" />
         <PackageReference Include="Soenneker.Resend.Emails" Version="3.0.8" />
         <PackageReference Include="Soenneker.Utils.Json" Version="3.0.2332" />
-        <PackageReference Include="Soenneker.Utils.Template" Version="3.0.127" />
+        <PackageReference Include="Soenneker.Utils.Template" Version="3.0.128" />
     </ItemGroup>
 </Project>
