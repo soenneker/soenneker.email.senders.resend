@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.Internal;
 using Serilog;
 using Soenneker.Email.Senders.Resend.Registrars;
 using Soenneker.Fixtures.Unit;
@@ -27,8 +25,6 @@ public sealed class Fixture : UnitFixture
 
         IConfiguration config = TestUtil.BuildConfig();
         services.AddSingleton(config);
-
-        services.AddSingleton<IHostEnvironment, HostingEnvironment>();
 
         services.AddResendEmailSenderAsScoped();
     }
