@@ -95,12 +95,12 @@ public sealed class ResendEmailSender : IEmailSender
         message.Name ??= _defaultName;
         message.Address ??= _defaultAddress;
 
-        string templateFilePath = Path.Combine("Resources", "Email", "Templates", message.TemplateFileName);
+        string templateFilePath = Path.Combine("LocalResources", "Email", "Templates", message.TemplateFileName);
 
         string? contentFilePath = null;
 
         if (message.ContentFileName != null)
-            contentFilePath = Path.Combine("Resources", "Email", "Contents", message.ContentFileName);
+            contentFilePath = Path.Combine("LocalResources", "Email", "Contents", message.ContentFileName);
 
         Dictionary<string, object> tokens = message.Tokens != null ? message.Tokens.ToObjectDictionary() : new Dictionary<string, object>();
 
