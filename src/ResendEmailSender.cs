@@ -100,18 +100,14 @@ public sealed class ResendEmailSender : IEmailSender
         string? contentFilePath = null;
 
         if (message.ContentFileName != null)
-        {
             contentFilePath = Path.Combine(AppContext.BaseDirectory, "LocalResources", "Email", "Contents", message.ContentFileName);
-        }
 
         Dictionary<string, object> tokens = message.Tokens != null ? message.Tokens.ToObjectDictionary() : new Dictionary<string, object>();
 
         tokens.Add("subject", message.Subject);
 
         if (contentFilePath != null)
-        {
             return await _templateUtil.RenderWithContent(templateFilePath, tokens, contentFilePath, "bodyText", message.Partials, cancellationToken).NoSync();
-        }
 
         return await _templateUtil.Render(templateFilePath, tokens, message.Partials, cancellationToken).NoSync();
     }
