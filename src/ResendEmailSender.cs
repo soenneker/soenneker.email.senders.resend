@@ -40,7 +40,7 @@ public sealed class ResendEmailSender : IEmailSender
         _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
     }
 
-    public Task<bool> Send(string messageContent, Type? type, CancellationToken cancellationToken = default)
+    public Task<bool> Send(string messageContent, Type type, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
         {
