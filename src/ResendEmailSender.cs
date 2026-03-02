@@ -40,7 +40,7 @@ public sealed class ResendEmailSender : IEmailSender
         _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
     }
 
-    public Task<bool> Send(string messageContent, Type type, CancellationToken cancellationToken = default)
+    public Task<bool> Send(string messageContent, string type, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
         {
@@ -51,12 +51,12 @@ public sealed class ResendEmailSender : IEmailSender
         if (type == null)
             throw new Exception("Service bus message did not have a type");
 
-        object? msgModel = JsonUtil.Deserialize(messageContent, type);
+        var msgModel = JsonUtil.Deserialize<EmailMessage>(messageContent);
 
-        if (msgModel is not EmailMessage message)
+        if (msgModel is null)
             throw new Exception($"Service bus message was not a {nameof(EmailMessage)}");
 
-        return Send(message, cancellationToken);
+        return Send(msgModel, cancellationToken);
     }
 
     public async Task<bool> Send(EmailMessage message, CancellationToken cancellationToken = default)
@@ -67,7 +67,8 @@ public sealed class ResendEmailSender : IEmailSender
             return false;
         }
 
-        string html = await BuildHtml(message, cancellationToken).NoSync();
+        string html = await BuildHtml(message, cancellationToken)
+            .NoSync();
 
         string from;
 
@@ -107,8 +108,10 @@ public sealed class ResendEmailSender : IEmailSender
         tokens.Add("subject", message.Subject);
 
         if (contentFilePath != null)
-            return await _templateUtil.RenderWithContent(templateFilePath, tokens, contentFilePath, "bodyText", message.Partials, cancellationToken).NoSync();
+            return await _templateUtil.RenderWithContent(templateFilePath, tokens, contentFilePath, "bodyText", message.Partials, cancellationToken)
+                                      .NoSync();
 
-        return await _templateUtil.Render(templateFilePath, tokens, message.Partials, cancellationToken).NoSync();
+        return await _templateUtil.Render(templateFilePath, tokens, message.Partials, cancellationToken)
+                                  .NoSync();
     }
 }
