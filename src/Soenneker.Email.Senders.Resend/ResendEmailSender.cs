@@ -40,6 +40,13 @@ public sealed class ResendEmailSender : IEmailSender
         _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
     }
 
+    /// <summary>
+    /// Executes the send operation.
+    /// </summary>
+    /// <param name="messageContent">The message content.</param>
+    /// <param name="type">The type.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task containing the result of the operation.</returns>
     public Task<bool> Send(string messageContent, string type, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
@@ -59,6 +66,12 @@ public sealed class ResendEmailSender : IEmailSender
         return Send(msgModel, cancellationToken);
     }
 
+    /// <summary>
+    /// Executes the send operation.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task containing the result of the operation.</returns>
     public async Task<bool> Send(EmailMessage message, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
