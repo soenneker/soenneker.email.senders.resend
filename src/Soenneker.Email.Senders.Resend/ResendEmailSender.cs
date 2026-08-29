@@ -41,12 +41,12 @@ public sealed class ResendEmailSender : IEmailSender
     }
 
     /// <summary>
-    /// Executes the send operation.
+    /// Sends resend email sender for the resend email sender.
     /// </summary>
-    /// <param name="messageContent">The message content.</param>
-    /// <param name="type">The type.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task containing the result of the operation.</returns>
+    /// <param name="messageContent">Body content of the email.</param>
+    /// <param name="type">Content type used to encode the message body.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>true if sends resend email sender for the resend email sender; otherwise, false.</returns>
     public Task<bool> Send(string messageContent, string type, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
@@ -67,11 +67,11 @@ public sealed class ResendEmailSender : IEmailSender
     }
 
     /// <summary>
-    /// Executes the send operation.
+    /// Sends resend email sender for the resend email sender.
     /// </summary>
-    /// <param name="message">The message.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task containing the result of the operation.</returns>
+    /// <param name="message">Fully constructed email message to send through Resend.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>true if sends resend email sender for the resend email sender; otherwise, false.</returns>
     public async Task<bool> Send(EmailMessage message, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
