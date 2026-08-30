@@ -14,10 +14,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Soenneker.Extensions.String;
 using Soenneker.Extensions.Dictionaries.StringString;
+using Soenneker.Enums.Email.Format;
 
 namespace Soenneker.Email.Senders.Resend;
 
-/// <inheritdoc cref="IEmailSender"/>
 public sealed class ResendEmailSender : IEmailSender
 {
     private readonly IResendEmailsUtil _resendEmailsUtil;
@@ -28,6 +28,8 @@ public sealed class ResendEmailSender : IEmailSender
     private const string _defaultTemplate = "default.html";
     private readonly string _defaultAddress;
     private readonly string _defaultName;
+    private readonly string _templatesRoot;
+    private readonly string _contentsRoot;
 
     public ResendEmailSender(IResendEmailsUtil resendEmailsUtil, IConfiguration configuration, ILogger<ResendEmailSender> logger, ITemplateUtil templateUtil)
     {
@@ -38,15 +40,12 @@ public sealed class ResendEmailSender : IEmailSender
         _enabled = configuration.GetValueStrict<bool>("Email:Enabled");
         _defaultAddress = configuration.GetValueStrict<string>("Email:DefaultAddress");
         _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
+
+        string resourcesRoot = Path.Combine(AppContext.BaseDirectory, "LocalResources", "Email");
+        _templatesRoot = Path.Combine(resourcesRoot, "Templates");
+        _contentsRoot = Path.Combine(resourcesRoot, "Contents");
     }
 
-    /// <summary>
-    /// Sends resend email sender for the resend email sender.
-    /// </summary>
-    /// <param name="messageContent">Body content of the email.</param>
-    /// <param name="type">Content type used to encode the message body.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>true if sends resend email sender for the resend email sender; otherwise, false.</returns>
     public Task<bool> Send(string messageContent, string type, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
@@ -55,23 +54,14 @@ public sealed class ResendEmailSender : IEmailSender
             return Task.FromResult(false);
         }
 
-        if (type == null)
-            throw new Exception("Service bus message did not have a type");
-
         var msgModel = JsonUtil.Deserialize<EmailMessage>(messageContent);
 
         if (msgModel is null)
-            throw new Exception($"Service bus message was not a {nameof(EmailMessage)}");
+            throw new InvalidOperationException($"Service bus message was not a {nameof(EmailMessage)}");
 
         return Send(msgModel, cancellationToken);
     }
 
-    /// <summary>
-    /// Sends resend email sender for the resend email sender.
-    /// </summary>
-    /// <param name="message">Fully constructed email message to send through Resend.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>true if sends resend email sender for the resend email sender; otherwise, false.</returns>
     public async Task<bool> Send(EmailMessage message, CancellationToken cancellationToken = default)
     {
         if (!_enabled)
@@ -83,12 +73,9 @@ public sealed class ResendEmailSender : IEmailSender
         string html = await BuildHtml(message, cancellationToken)
             .NoSync();
 
-        string from;
-
-        if (message.Name != null)
-            from = $"{message.Name} <{message.Address}>";
-        else
-            from = message.Address;
+        string address = message.Address ?? _defaultAddress;
+        string? name = message.Name ?? _defaultName;
+        string from = name.HasContent() ? $"{name} <{address}>" : address;
 
         List<string>? replyTo = null;
         if (message.ReplyTo.HasContent())
@@ -96,29 +83,29 @@ public sealed class ResendEmailSender : IEmailSender
             replyTo = [message.ReplyTo];
         }
 
-        await _resendEmailsUtil.Send(from, message.To, message.Subject, html, null, message.Cc, message.Bcc, replyTo, null, null, null, cancellationToken)
-                               .NoSync();
+        string? providerId = message.Format == EmailFormat.Plaintext
+            ? await _resendEmailsUtil.Send(from, message.To, message.Subject, null, html, message.Cc, message.Bcc, replyTo, null, null, null, cancellationToken)
+                                     .NoSync()
+            : await _resendEmailsUtil.Send(from, message.To, message.Subject, html, null, message.Cc, message.Bcc, replyTo, null, null, null, cancellationToken)
+                                     .NoSync();
 
-        return true;
+        return providerId is not null;
     }
 
     private async ValueTask<string> BuildHtml(EmailMessage message, CancellationToken cancellationToken)
     {
         message.TemplateFileName ??= _defaultTemplate;
 
-        message.Name ??= _defaultName;
-        message.Address ??= _defaultAddress;
-
-        string templateFilePath = Path.Combine(AppContext.BaseDirectory, "LocalResources", "Email", "Templates", message.TemplateFileName);
+        string templateFilePath = ResolveResourceFile(_templatesRoot, message.TemplateFileName, "template");
 
         string? contentFilePath = null;
 
         if (message.ContentFileName != null)
-            contentFilePath = Path.Combine(AppContext.BaseDirectory, "LocalResources", "Email", "Contents", message.ContentFileName);
+            contentFilePath = ResolveResourceFile(_contentsRoot, message.ContentFileName, "content");
 
         Dictionary<string, object> tokens = message.Tokens != null ? message.Tokens.ToObjectDictionary() : new Dictionary<string, object>();
 
-        tokens.Add("subject", message.Subject);
+        tokens["subject"] = message.Subject;
 
         if (contentFilePath != null)
             return await _templateUtil.RenderWithContent(templateFilePath, tokens, contentFilePath, "bodyText", message.Partials, cancellationToken)
@@ -126,5 +113,16 @@ public sealed class ResendEmailSender : IEmailSender
 
         return await _templateUtil.Render(templateFilePath, tokens, message.Partials, cancellationToken)
                                   .NoSync();
+    }
+
+    private static string ResolveResourceFile(string root, string relativePath, string description)
+    {
+        string fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+        string fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
+
+        if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"The email {description} file must be located under {fullRoot}");
+
+        return fullPath;
     }
 }

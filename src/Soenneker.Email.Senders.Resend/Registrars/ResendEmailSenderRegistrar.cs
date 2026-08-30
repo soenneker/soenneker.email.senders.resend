@@ -18,7 +18,7 @@ public static class ResendEmailSenderRegistrar
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddResendEmailSenderAsSingleton(this IServiceCollection services)
     {
-        services.AddResendEmailsUtilAsSingleton().TryAddSingleton<IEmailSender, ResendEmailSender>();
+        services.AddResendEmailsUtilAsSingleton().AddTemplateUtilAsSingleton().TryAddSingleton<IEmailSender, ResendEmailSender>();
 
         return services;
     }

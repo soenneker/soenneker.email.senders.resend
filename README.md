@@ -5,7 +5,7 @@
 
 # Soenneker.Email.Senders.Resend
 
-A high-level utility responsible for orchestrating the creation and delivery of templated email messages using Resend.
+Renders `EmailMessage` payloads with Scriban templates and delivers them through the Resend API.
 
 ## Install
 
@@ -13,25 +13,85 @@ A high-level utility responsible for orchestrating the creation and delivery of 
 dotnet add package Soenneker.Email.Senders.Resend
 ```
 
-## Quick start
+## Resource layout
+
+```text
+LocalResources/
+  Email/
+    Templates/
+      default.html
+    Contents/
+      welcome.html
+```
+
+Paths are resolved beneath the application's output directory. `TemplateFileName` defaults to `default.html`; `ContentFileName` is optional and, when supplied, is rendered into the outer template as `bodyText`. Absolute paths and traversal outside the template or content root are rejected.
+
+Message tokens and partials become Scriban globals. The sender always sets the `subject` token from `EmailMessage.Subject`, replacing a caller-supplied token with that name.
+
+## Configuration
+
+```json
+{
+  "Email": {
+    "Enabled": true,
+    "DefaultAddress": "mailer@example.com",
+    "DefaultName": "Example App"
+  },
+  "Resend": {
+    "ApiKey": "use-a-secret-provider"
+  }
+}
+```
+
+All four values are required when resolving the sender. Keep the API key in a secret provider.
+
+## Registration
 
 ```csharp
 using Soenneker.Email.Senders.Resend.Registrars;
-using Microsoft.Extensions.DependencyInjection;
 
-var services = new ServiceCollection();
-var result = services.AddResendEmailSenderAsSingleton();
+services.AddResendEmailSenderAsSingleton();
 ```
 
-Adds `IEmailSender` as a singleton service.
+This registers `IEmailSender`, the Resend email utility/client, and the template utility as singletons.
 
-## What you get
+For request-scoped rendering, use:
 
-- `ResendEmailSenderRegistrar` — A high-level utility responsible for orchestrating the creation and delivery of templated email messages using Resend.
+```csharp
+services.AddResendEmailSenderAsScoped();
+```
 
-## API at a glance
+That registration makes the sender, email utility, and template utility scoped while deliberately retaining the Resend client utility as a singleton. Disposing a scope tears down the wrapper utilities without recreating or disposing the shared HTTP client on every request.
 
-| API | What it does | Result / important behavior |
-| --- | --- | --- |
-| `ResendEmailSenderRegistrar.AddResendEmailSenderAsSingleton(services)` | Adds `IEmailSender` as a singleton service. | The same service collection, so additional registrations can be chained. |
-| `ResendEmailSenderRegistrar.AddResendEmailSenderAsScoped(services)` | Adds `IEmailSender` as a scoped service. | The same service collection, so additional registrations can be chained. |
+## Send an email
+
+```csharp
+using Soenneker.Email.Senders.Abstract;
+using Soenneker.Enums.Email.Format;
+using Soenneker.Enums.Email.Priority;
+using Soenneker.Messages.Email;
+
+var message = new EmailMessage
+{
+    Type = "email.welcome.v1",
+    Id = Guid.NewGuid().ToString("N"),
+    Queue = "email",
+    Sender = "accounts-api",
+    CreatedAt = DateTimeOffset.UtcNow,
+    To = ["recipient@example.net"],
+    Subject = "Welcome, Alex",
+    Format = EmailFormat.Html,
+    Priority = EmailPriority.Normal,
+    ContentFileName = "welcome.html",
+    Tokens = new Dictionary<string, string> { ["first_name"] = "Alex" }
+};
+
+IEmailSender sender = serviceProvider.GetRequiredService<IEmailSender>();
+bool accepted = await sender.Send(message, cancellationToken);
+```
+
+HTML messages are sent through Resend's `html` field; plaintext messages use its `text` field. `Name` and `Address` fall back to the configured defaults, and `ReplyTo`, `To`, `Cc`, and `Bcc` are forwarded. `Priority` is not mapped because this adapter does not send a priority field to Resend.
+
+The result is `true` only when Resend returns a provider email ID. It is `false` when email is disabled or the provider response has no ID. API, rendering, configuration, and deserialization failures are raised as exceptions.
+
+The string overload always deserializes `messageContent` as `EmailMessage`; the accompanying `type` is transport metadata and does not select an arbitrary CLR type.
