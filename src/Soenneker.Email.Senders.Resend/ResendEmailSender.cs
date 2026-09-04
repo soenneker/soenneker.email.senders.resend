@@ -18,6 +18,7 @@ using Soenneker.Enums.Email.Format;
 
 namespace Soenneker.Email.Senders.Resend;
 
+/// <inheritdoc cref="IEmailSender" />
 public sealed class ResendEmailSender : IEmailSender
 {
     private readonly IResendEmailsUtil _resendEmailsUtil;
