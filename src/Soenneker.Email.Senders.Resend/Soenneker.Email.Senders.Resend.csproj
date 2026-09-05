@@ -47,7 +47,7 @@
         <PackageReference Include="Soenneker.Email.Senders.Abstract" Version="4.0.177" />
         <PackageReference Include="Soenneker.Extensions.Dictionaries.StringString" Version="4.0.26" />
         <PackageReference Include="Soenneker.Resend.Emails" Version="4.0.357" />
-        <PackageReference Include="Soenneker.Utils.Json" Version="4.0.2679" />
+        <PackageReference Include="Soenneker.Utils.Json" Version="4.0.2681" />
         <PackageReference Include="Soenneker.Utils.Template" Version="4.0.390" />
     </ItemGroup>
 </Project>
