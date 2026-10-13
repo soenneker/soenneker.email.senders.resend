@@ -38,9 +38,9 @@ public sealed class ResendEmailSender : IEmailSender
         _logger = logger;
         _templateUtil = templateUtil;
 
-        _enabled = configuration.GetValueStrict<bool>("Email:Enabled");
-        _defaultAddress = configuration.GetValueStrict<string>("Email:DefaultAddress");
-        _defaultName = configuration.GetValueStrict<string>("Email:DefaultName");
+        _enabled = bool.Parse(configuration.GetStringStrict("Email:Enabled"));
+        _defaultAddress = configuration.GetStringStrict("Email:DefaultAddress");
+        _defaultName = configuration.GetStringStrict("Email:DefaultName");
 
         string resourcesRoot = Path.Combine(AppContext.BaseDirectory, "LocalResources", "Email");
         _templatesRoot = Path.Combine(resourcesRoot, "Templates");
