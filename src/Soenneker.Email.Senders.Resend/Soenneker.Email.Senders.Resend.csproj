@@ -46,10 +46,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Soenneker.Email.Senders.Abstract" Version="11.0.224" />
+        <PackageReference Include="Soenneker.Email.Senders.Abstract" Version="11.0.225" />
         <PackageReference Include="Soenneker.Extensions.Dictionaries.StringString" Version="11.0.44" />
-        <PackageReference Include="Soenneker.Resend.Emails" Version="11.0.427" />
-        <PackageReference Include="Soenneker.Utils.Json" Version="11.0.2783" />
+        <PackageReference Include="Soenneker.Resend.Emails" Version="11.0.428" />
+        <PackageReference Include="Soenneker.Utils.Json" Version="11.0.2785" />
         <PackageReference Include="Soenneker.Utils.Template" Version="11.0.462" />
     </ItemGroup>
 </Project>
